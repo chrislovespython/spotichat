@@ -23,7 +23,7 @@ export default function Callback() {
     })
       .then(res => res.json())
       .then(data => {
-        localStorage.setItem("spotify_user", data)
+        localStorage.setItem("spotify_user", JSON.stringify(data))
         console.log(data)
       })
       .catch(err => console.error(err))

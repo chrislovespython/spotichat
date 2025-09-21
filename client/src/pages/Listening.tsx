@@ -21,7 +21,7 @@ export default function Listening() {
       headers: { Authorization: `Bearer ${token}` }
     })
       const data = await res.json()
-      console.log(data.images)
+      console.log(data)
       setSong(data)
     }
 
@@ -68,9 +68,9 @@ export default function Listening() {
             />
           )}
           <h2 className="text-xl font-bold text-center">{song.name}</h2>
-        {song.artists && (<p className="text-neutral-400 text-center">
-            {song.artists.map(a => a?.name).join(", ")}
-          </p>)}
+        <p className="text-neutral-400 text-center">
+            {song.artist}
+          </p>
           <p className="text-sm text-neutral-500">
             {song.is_playing ? "Playing now" : "Paused"}
           </p>
