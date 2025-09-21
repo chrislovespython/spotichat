@@ -1,20 +1,27 @@
 import { Button } from "@/components/ui/button"
-import { getSpotifyLoginUrl } from "@/lib/auth"
 
 export default function Home() {
-  const handleLogin = () => {
-    window.location.href = getSpotifyLoginUrl()
+  const login = async () => {
+    const res = await fetch("http://localhost:8000/auth/login")
+    const data = await res.json()
+    window.location.href = data.url
+  }
+
+  const logout = () => {
+    localStorage.removeItem("spotify_token")
+    window.location.href = "/"
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-[80vh] text-center space-y-4">
-      <h1 className="text-4xl font-bold">Welcome to SongSpace</h1>
-      <p className="text-lg text-muted-foreground max-w-md">
-        Connect with people listening to the same song in real time.
-      </p>
-      <Button size="lg" onClick={handleLogin}>
-        Login with Spotify
-      </Button>
+    <div className="flex flex-col items-center justify-center h-screen text-center gap-4">
+      <h1 className="text-4xl font-bold">🎶 Spotify Connect</h1>
+      <p className="text-neutral-400">See who’s listening to the same song and comment about it!</p>
+
+      {localStorage.getItem("spotify_token") ? (
+        <Button variant="destructive" onClick={logout}>Logout</Button>
+      ) : (
+        <Button onClick={login}>Login with Spotify</Button>
+      )}
     </div>
   )
 }

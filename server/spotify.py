@@ -1,24 +1,47 @@
-from fastapi import APIRouter
+from json import load
+import os
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+from dotenv import load_dotenv
 
-router = APIRouter()
+load_dotenv()
 
-# Example: Active listeners
-fake_listeners = {
-    "3n3Ppam7vgaVa1iaRUc9Lp": ["user1", "user2"],  # Song ID → listeners
-}
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
 
-@router.get("/listening")
-async def listening():
-    return {"active_listeners": fake_listeners}
+scope = "user-read-currently-playing user-read-playback-state"
 
-@router.get("/song/{song_id}")
-async def song_details(song_id: str):
-    listeners = fake_listeners.get(song_id, [])
+sp_oauth = SpotifyOAuth(
+    client_id=SPOTIFY_CLIENT_ID,
+    client_secret=SPOTIFY_CLIENT_SECRET,
+    redirect_uri=SPOTIFY_REDIRECT_URI,
+    scope=scope
+)
+
+def get_auth_url():
+    return sp_oauth.get_authorize_url()
+
+def exchange_code(code: str):
+    token_info = sp_oauth.get_access_token(code)
+    return token_info
+
+def get_current_song(token: str):
+    sp = spotipy.Spotify(auth=token)
+    current = sp.current_user_playing_track()
+    if not current or not current.get("item"):
+        return None
+    #print(current)
     return {
-        "song_id": song_id,
-        "listeners": listeners,
-        "comments": [
-            {"user": "user1", "time": "1:23", "comment": "This drop is 🔥"},
-            {"user": "user2", "time": "2:01", "comment": "Chills!"}
-        ]
+        "id": current["item"]["id"],
+        "name": current["item"]["name"],
+        "images": current["item"]["album"]["images"],
+        "artist": ", ".join([a["name"] for a in current["item"]["artists"]]),
+        "is_playing": current["is_playing"]
     }
+    
+def get_current_user(token: str):
+    sp = spotipy.Spotify(auth=token)
+    user = sp.me()
+    print(user)
+    return user

@@ -6,22 +6,32 @@ export default function Callback() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const code = params.get("code")
-    if (!code) return
+  const code = params.get("code")
+  console.log(code)
+  if (!code) return
 
-    // Exchange code for tokens (via backend)
-    fetch("http://localhost:8000/auth/callback", { // backend endpoint
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code })
+  fetch("http://localhost:8000/auth/callback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code })
+  })
+    .then(res => res.json())
+    .then(data => {
+      localStorage.setItem("spotify_token", data.access_token)
+      fetch("http://localhost:8000/me", {
+      headers: { Authorization: `Bearer ${data.access_token}` }
     })
       .then(res => res.json())
       .then(data => {
-        localStorage.setItem("spotify_token", data.access_token)
-        navigate("/listening")
+        localStorage.setItem("spotify_user", data)
+        console.log(data)
       })
-      .catch(err => console.error("Auth failed", err))
-  }, [params, navigate])
+      .catch(err => console.error(err))
+      navigate("/listening")
+    })
+    .catch(err => console.error("Auth failed", err))
+}, [params, navigate])
+
 
   return (
     <div className="flex items-center justify-center h-screen">
