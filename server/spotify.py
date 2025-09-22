@@ -40,6 +40,11 @@ def get_current_song(token: str):
         "is_playing": current["is_playing"]
     }
     
+def get_user_by_id(token: str, user_id: str):
+    sp = spotipy.Spotify(auth=token)
+    return sp.user(user_id)
+
+    
 def get_current_user(token: str):
     sp = spotipy.Spotify(auth=token)
     user = sp.me()

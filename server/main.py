@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from spotify import get_auth_url, exchange_code, get_current_song, get_current_user
+from spotify import get_auth_url, exchange_code, get_current_song, get_current_user, get_user_by_id
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -43,6 +43,15 @@ def current(authorization: str = Header(...)):
 @app.get("/auth/login")
 def login():
     return {"url": get_auth_url()}
+
+
+@app.get("/user/{user_id}")
+def spotify_user(user_id: str, authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid auth header")
+    token = authorization.split(" ")[1]
+    return get_user_by_id(token, user_id)
+
 
 class CodeBody(BaseModel):
     code: str

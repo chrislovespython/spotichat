@@ -35,11 +35,10 @@ export type CurrentSong = {
 
 // Comment
 export type Comment = {
-  id?: string
-  user: string
-  avatar_url?: string
-  comment: string
+  id: string
+  authorId: string
+  content: string
   song_id: string
-  time?: number // seconds, optional
-  timestamp?: string
+  likedBy: string[] // seconds, optional
+  timestamp?: number
 } | null

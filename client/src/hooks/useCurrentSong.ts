@@ -32,7 +32,7 @@ export function useCurrentSong(token: string | null) {
     }
 
     fetchSong()
-    const interval = setInterval(fetchSong, 3000) // refresh every 5s
+    const interval = setInterval(fetchSong, 7000) // refresh every 5s
     return () => clearInterval(interval)
   }, [token])
 
