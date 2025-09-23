@@ -53,7 +53,40 @@ export function CommentCard({ comment, currentUserId, songId }: {
         fetchProfile()
       }
     return () => { active = false }
-  }, [comment?.authorId, token, currentUserId, currentUser.images, currentUser.id, currentUser.display_name])
+  }, [])
+
+  // Seek to timestamp from comment
+const seekToTimestamp = async (timestampMs: number) => {
+  try {
+    const token = localStorage.getItem('spotify_token');
+    
+    const response = await fetch('http://localhost:8000/seek', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        timestamp_ms: timestampMs
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      console.log(`Seeked to ${data.seeked_to_readable}`);
+    } else {
+      console.error('Seek failed:', data.detail);
+    }
+  } catch (error) {
+    console.error('Error seeking:', error);
+  }
+};
+
+// In your comment component, when user clicks a timestamp:
+const handleTimestampClick = (milliseconds: number) => {
+  seekToTimestamp(milliseconds);
+};
 
   const handleToggleLike = async () => {
     await toggleLike(comment?.id as string, currentUserId, hasLiked as boolean)
@@ -85,6 +118,9 @@ export function CommentCard({ comment, currentUserId, songId }: {
               <button className="btn" onClick={handleRemove}>
                 Delete
               </button>
+            )}
+            {comment?.time && (
+              <button onClick={() => handleTimestampClick(comment?.time as number)}>Go To TimeStamp</button>
             )}
           </div>
         </div>

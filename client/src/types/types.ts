@@ -40,5 +40,5 @@ export type Comment = {
   content: string
   song_id: string
   likedBy: string[] // seconds, optional
-  timestamp?: number
+  time?: number
 } | null

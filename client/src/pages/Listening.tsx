@@ -115,7 +115,6 @@ export default function Listening() {
       {/* Buttons */}
       <div className="flex gap-4">
         <Button onClick={() => navigate(`/song/${song.id}`)}>Go to Comments</Button>
-        <Button variant="outline" onClick={() => setSong(null)}>Refresh</Button>
       </div>
     </div>
   )
