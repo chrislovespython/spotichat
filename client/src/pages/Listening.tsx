@@ -13,16 +13,51 @@ export default function Listening() {
   const [user, setUser] = useState<SpotifyUser | null>(null)
   const [song, setSong] = useState<SongItem | null>(null)
 
+  async function refreshToken(ref: string) {
+    try {
+      const res = await fetch("http://localhost:8000/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: ref }),
+      })
+      const data = await res.json()
+      localStorage.setItem("spotify_token", data.access_token)
+      localStorage.setItem("refresh_token", data.refresh_token)
+      localStorage.setItem(
+        "token_expires", data.expires_at)
+      return data.access_token
+    } catch(err) {
+      console.log(err)
+    }
+  }
+
   // Fetch current song every 5s
   useEffect(() => {
     if (!token) return
     const fetchSong = async () => {
-      const res = await fetch("http://localhost:8000/current-song", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+      const expireTime = Number(localStorage.getItem("token_expires"))
+      const refresh_token = localStorage.getItem("refresh_token") as string
+
+      if (Date.now() >= expireTime) {
+        console.log("token expired")
+        const newToken = await refreshToken(refresh_token)
+        console.log(newToken)
+        const res = await fetch("http://localhost:8000/current-song", {
+      headers: { Authorization: `Bearer ${newToken}` }
+      })
       const data = await res.json()
       console.log(data)
       setSong(data)
+      }
+      else {
+        const res = await fetch("http://localhost:8000/current-song", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        const data = await res.json()
+        console.log(data)
+        setSong(data)
+
+      }
     }
 
     if (localUser) {

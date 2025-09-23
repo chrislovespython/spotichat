@@ -17,7 +17,10 @@ export default function Callback() {
   })
     .then(res => res.json())
     .then(data => {
+      console.log(data)
       localStorage.setItem("spotify_token", data.access_token)
+      localStorage.setItem("token_expires", data.expires_at)
+      localStorage.setItem("refresh_token", data.refresh_token)
       fetch("http://localhost:8000/me", {
       headers: { Authorization: `Bearer ${data.access_token}` }
     })

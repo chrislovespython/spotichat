@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import type { Comment } from "@/types/types"
 import { toggleLike, removeComment } from "@/lib/commentService"
 
@@ -17,14 +15,17 @@ export function CommentCard({ comment, currentUserId, songId }: {
   songId: string
 }) {
   const [profile, setProfile] = useState<SpotifyProfile | null>(null)
+  const [loading, setLoading] = useState(true)
   const hasLiked = comment?.likedBy.includes(currentUserId)
 
   const token = localStorage.getItem("spotify_token")
+  const currentUser = JSON.parse(localStorage.getItem("spotify_user") as string)
 
   useEffect(() => {
     let active = true
+    setLoading(true)
     async function fetchProfile() {
-        console.log(comment?.authorId)
+      console.log(comment?.authorId)
         console.log(token)
       const res = await fetch(`http://localhost:8000/user/${comment?.authorId}`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -38,11 +39,21 @@ export function CommentCard({ comment, currentUserId, songId }: {
             display_name: u.display_name,
             avatar_url: u.images?.[0]?.url
           })
+          setLoading(false)
         }
       }
-    fetchProfile()
+      if (currentUser?.id === currentUserId) {
+        setProfile({
+          id: currentUser.id,
+          display_name: currentUser.display_name,
+          avatar_url: currentUser.images?.[0]?.url
+        })
+          setLoading(false)
+      } else {
+        fetchProfile()
+      }
     return () => { active = false }
-  }, [comment?.authorId, token])
+  }, [comment?.authorId, token, currentUserId, currentUser.images, currentUser.id, currentUser.display_name])
 
   const handleToggleLike = async () => {
     await toggleLike(comment?.id as string, currentUserId, hasLiked as boolean)
@@ -52,9 +63,13 @@ export function CommentCard({ comment, currentUserId, songId }: {
     await removeComment(songId, comment?.id as string)
   }
 
+  if (loading) return (
+    <div className="loading loading-spinner">Loading bro...</div>
+  )
+
   return (
-    <Card>
-      <CardContent className="p-4 flex gap-3 items-start">
+    <div className="card bg-base-100 ">
+      <div className="p-4 flex gap-3 items-start">
         <Avatar>
           {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
         </Avatar>
@@ -63,17 +78,17 @@ export function CommentCard({ comment, currentUserId, songId }: {
           <p className="mt-1">{comment?.content}</p>
           <div className="flex gap-4 mt-2 text-xs text-neutral-500 items-center">
             <span>{comment?.likedBy.length} likes</span>
-            <Button size="sm" onClick={handleToggleLike}>
+            <button className="btn" onClick={handleToggleLike}>
               {hasLiked ? "💔 Unlike" : "❤️ Like"}
-            </Button>
+            </button>
             {comment?.authorId === currentUserId && (
-              <Button size="sm" variant="destructive" onClick={handleRemove}>
+              <button className="btn" onClick={handleRemove}>
                 Delete
-              </Button>
+              </button>
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
