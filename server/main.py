@@ -81,6 +81,8 @@ def seek_track(body: SeekRequest, authorization: str = Header(...)):
         playback_data = current_response.json()
         #print(playback_data)
         
+        track = playback_data.get("item")
+        
         if not playback_data.get("is_playing"):
             raise HTTPException(status_code=400, detail="Playback is paused")
         

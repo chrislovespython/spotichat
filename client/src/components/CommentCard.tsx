@@ -16,10 +16,20 @@ export function CommentCard({ comment, currentUserId, songId }: {
 }) {
   const [profile, setProfile] = useState<SpotifyProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const hasLiked = comment?.likedBy.includes(currentUserId)
+  
+  // Local state for optimistic updates
+  const [localLikedBy, setLocalLikedBy] = useState<string[]>(comment?.likedBy || [])
+  const [isUpdatingLike, setIsUpdatingLike] = useState(false)
+  
+  const hasLiked = localLikedBy.includes(currentUserId)
 
   const token = localStorage.getItem("spotify_token")
   const currentUser = JSON.parse(localStorage.getItem("spotify_user") as string)
+
+  // Update local state when comment prop changes
+  useEffect(() => {
+    setLocalLikedBy(comment?.likedBy || [])
+  }, [comment?.likedBy])
 
   useEffect(() => {
     let active = true
@@ -76,6 +86,7 @@ const seekToTimestamp = async (timestampMs: number) => {
     if (response.ok) {
       console.log(`Seeked to ${data.seeked_to_readable}`);
     } else {
+      alert("You Need Spotify Premium To Seek.")
       console.error('Seek failed:', data.detail);
     }
   } catch (error) {
@@ -89,7 +100,38 @@ const handleTimestampClick = (milliseconds: number) => {
 };
 
   const handleToggleLike = async () => {
-    await toggleLike(comment?.id as string, currentUserId, hasLiked as boolean)
+    if (isUpdatingLike) return // Prevent multiple simultaneous requests
+    
+    setIsUpdatingLike(true)
+    
+    // Optimistic update - update UI immediately
+    const currentlyLiked = hasLiked
+    if (currentlyLiked) {
+      // Remove like optimistically
+      setLocalLikedBy(prev => prev.filter(id => id !== currentUserId))
+    } else {
+      // Add like optimistically
+      setLocalLikedBy(prev => [...prev, currentUserId])
+    }
+    
+    try {
+      // Update server
+      await toggleLike(comment?.id as string, currentUserId, currentlyLiked)
+    } catch (error) {
+      // Revert optimistic update on error
+      console.error('Failed to toggle like:', error)
+      if (currentlyLiked) {
+        // Restore the like if removal failed
+        setLocalLikedBy(prev => [...prev, currentUserId])
+      } else {
+        // Remove the like if addition failed
+        setLocalLikedBy(prev => prev.filter(id => id !== currentUserId))
+      }
+      // Optional: Show error message to user
+      alert('Failed to update like. Please try again.')
+    } finally {
+      setIsUpdatingLike(false)
+    }
   }
 
   const handleRemove = async () => {
@@ -110,8 +152,12 @@ const handleTimestampClick = (milliseconds: number) => {
           <p className="font-semibold">{profile?.display_name || ""}</p>
           <p className="mt-1">{comment?.content}</p>
           <div className="flex gap-4 mt-2 text-xs text-neutral-500 items-center">
-            <span>{comment?.likedBy.length} likes</span>
-            <button className="btn" onClick={handleToggleLike}>
+            <span>{localLikedBy.length} likes</span>
+            <button 
+              className={`btn ${isUpdatingLike ? 'btn-disabled' : ''}`} 
+              onClick={handleToggleLike}
+              disabled={isUpdatingLike}
+            >
               {hasLiked ? "💔 Unlike" : "❤️ Like"}
             </button>
             {comment?.authorId === currentUserId && (
@@ -119,8 +165,10 @@ const handleTimestampClick = (milliseconds: number) => {
                 Delete
               </button>
             )}
-            {comment?.time && (
-              <button onClick={() => handleTimestampClick(comment?.time as number)}>Go To TimeStamp</button>
+            {comment?.time != null && comment?.time > 0 && (
+              <button onClick={() => handleTimestampClick(comment?.time as number)}>
+                Go To Timestamp
+              </button>
             )}
           </div>
         </div>
