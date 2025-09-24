@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from spotify import get_auth_url, exchange_code, get_current_song, get_current_user, get_user_by_id
 from pydantic import BaseModel
@@ -6,6 +6,14 @@ import os
 import base64
 from dotenv import load_dotenv
 import requests
+import json
+import asyncio
+from typing import Dict, List
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -27,6 +35,241 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# WebSocket Connection Manager for Songs
+class SongConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+        self.user_tokens: Dict[str, str] = {}
+        
+    async def connect(self, websocket: WebSocket, user_id: str, token: str):
+        await websocket.accept()
+        self.active_connections[user_id] = websocket
+        self.user_tokens[user_id] = token
+        logger.info(f"User {user_id} connected to songs WebSocket")
+        
+    def disconnect(self, user_id: str):
+        if user_id in self.active_connections:
+            del self.active_connections[user_id]
+        if user_id in self.user_tokens:
+            del self.user_tokens[user_id]
+        logger.info(f"User {user_id} disconnected from songs WebSocket")
+        
+    async def send_personal_message(self, message: dict, user_id: str):
+        if user_id in self.active_connections:
+            try:
+                await self.active_connections[user_id].send_text(json.dumps(message))
+            except Exception as e:
+                logger.error(f"Error sending message to {user_id}: {e}")
+                self.disconnect(user_id)
+                
+    async def broadcast(self, message: dict):
+        disconnected_users = []
+        for user_id, connection in self.active_connections.items():
+            try:
+                await connection.send_text(json.dumps(message))
+            except Exception as e:
+                logger.error(f"Error broadcasting to {user_id}: {e}")
+                disconnected_users.append(user_id)
+        
+        # Clean up disconnected users
+        for user_id in disconnected_users:
+            self.disconnect(user_id)
+
+song_manager = SongConnectionManager()
+
+# WebSocket helper functions
+async def get_song_by_id_ws(token: str, song_id: str):
+    """Get song details by Spotify track ID for WebSocket"""
+    try:
+        response = requests.get(
+            f"https://api.spotify.com/v1/tracks/{song_id}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            track_data = response.json()
+            return {
+                "id": track_data["id"],
+                "name": track_data["name"],
+                "artist": track_data["artists"][0].get("name"),
+                "images": track_data["album"]["images"],
+                "duration_ms": track_data["duration_ms"],
+                "explicit": track_data["explicit"],
+                "external_urls": track_data["external_urls"],
+                "preview_url": track_data.get("preview_url"),
+                "popularity": track_data["popularity"],
+                "is_playing": track_data.get("is_playing", False),
+            }
+        return None
+    except Exception as e:
+        logger.error(f"Error fetching song {song_id}: {e}")
+        return None
+
+async def get_current_song_ws(token: str):
+    """Get current playing song for WebSocket"""
+    try:
+        response = requests.get(
+            "https://api.spotify.com/v1/me/player/currently-playing",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data and data.get("item"):
+                track = data["item"]
+                return {
+                    "id": track["id"],
+                    "name": track["name"],
+                    "artist": track["artists"][0].get("name"),
+                    "images": track["album"]["images"],
+                    "duration_ms": track["duration_ms"],
+                    "explicit": track["explicit"],
+                    "external_urls": track["external_urls"],
+                    "preview_url": track.get("preview_url"),
+                    "popularity": track["popularity"],
+                    "is_playing": data.get("is_playing", False),
+                }
+        return None
+    except Exception as e:
+        logger.error(f"Error fetching current song: {e}")
+        return None
+
+# WebSocket endpoint for song operations
+@app.websocket("/ws/songs/{user_id}")
+async def websocket_songs_endpoint(websocket: WebSocket, user_id: str):
+    # Get token from query parameters
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4001, reason="No token provided")
+        return
+        
+    await song_manager.connect(websocket, user_id, token)
+    
+    try:
+        while True:
+            # Receive message from client
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            
+            action = message.get("action")
+            logger.info(f"Received action: {action} from user {user_id}")
+            
+            if action == "get_current_song":
+                # Get current playing song
+                current_song = await get_current_song_ws(token)
+                response = {
+                    "action": "current_song_response",
+                    "data": current_song,
+                    "success": current_song is not None
+                }
+                await song_manager.send_personal_message(response, user_id)
+                
+            elif action == "get_song_by_id":
+                # Get specific song by ID
+                song_id = message.get("song_id")
+                if song_id:
+                    song = await get_song_by_id_ws(token, song_id)
+                    response = {
+                        "action": "song_by_id_response",
+                        "data": song,
+                        "song_id": song_id,
+                        "success": song is not None
+                    }
+                else:
+                    response = {
+                        "action": "song_by_id_response",
+                        "error": "No song_id provided",
+                        "success": False
+                    }
+                await song_manager.send_personal_message(response, user_id)
+                
+            elif action == "get_multiple_songs":
+                # Get multiple songs by IDs
+                song_ids = message.get("song_ids", [])
+                if song_ids and len(song_ids) <= 50:  # Spotify API limit
+                    songs = []
+                    for song_id in song_ids:
+                        song = await get_song_by_id_ws(token, song_id)
+                        if song:
+                            songs.append(song)
+                    
+                    response = {
+                        "action": "multiple_songs_response",
+                        "data": {"tracks": songs},
+                        "success": True
+                    }
+                else:
+                    response = {
+                        "action": "multiple_songs_response",
+                        "error": "Invalid song_ids (max 50 allowed)",
+                        "success": False
+                    }
+                await song_manager.send_personal_message(response, user_id)
+                
+            elif action == "start_current_song_polling":
+                # Start polling current song every N seconds
+                interval = message.get("interval", 5)  # Default 5 seconds
+                response = {
+                    "action": "polling_started",
+                    "interval": interval,
+                    "success": True
+                }
+                await song_manager.send_personal_message(response, user_id)
+                
+                # Start background task for polling
+                asyncio.create_task(poll_current_song(user_id, token, interval))
+                
+            elif action == "stop_current_song_polling":
+                # Stop polling (handled by disconnection or flag)
+                response = {
+                    "action": "polling_stopped",
+                    "success": True
+                }
+                await song_manager.send_personal_message(response, user_id)
+                
+            elif action == "ping":
+                # Ping-pong for connection health
+                response = {
+                    "action": "pong",
+                    "timestamp": message.get("timestamp"),
+                    "success": True
+                }
+                await song_manager.send_personal_message(response, user_id)
+                
+            else:
+                # Unknown action
+                response = {
+                    "action": "error",
+                    "error": f"Unknown action: {action}",
+                    "success": False
+                }
+                await song_manager.send_personal_message(response, user_id)
+                
+    except WebSocketDisconnect:
+        song_manager.disconnect(user_id)
+    except Exception as e:
+        logger.error(f"WebSocket error for user {user_id}: {e}")
+        song_manager.disconnect(user_id)
+
+# Background task for polling current song
+async def poll_current_song(user_id: str, token: str, interval: int):
+    """Poll current song and send updates"""
+    try:
+        while user_id in song_manager.active_connections:
+            current_song = await get_current_song_ws(token)
+            response = {
+                "action": "current_song_update",
+                "data": current_song,
+                "success": current_song is not None
+            }
+            await song_manager.send_personal_message(response, user_id)
+            await asyncio.sleep(interval)
+    except Exception as e:
+        logger.error(f"Error in polling task for user {user_id}: {e}")
+
+# Rest of your existing endpoints remain the same...
 # Backend
 from fastapi import Header, HTTPException
 

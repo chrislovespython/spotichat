@@ -18,7 +18,7 @@ export type SongItem = {
   id: string
   name: string
   artist : string
-  images: { url: string; height?: number; width?: number }[]
+  images: {height: number, width: number, url: string}[]
   duration_ms?: number
   is_playing: boolean
   progress_ms?: number
