@@ -222,7 +222,7 @@ export default function Listening() {
         console.log('🎵 WebSocket connected!')
         setConnectionStatus('connected')
         // Start polling for current song every 3 seconds
-        ws.startPolling(3)
+        ws.startPolling(30)
       }
 
       ws.onDisconnect = () => {

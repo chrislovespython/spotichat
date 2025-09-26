@@ -6,6 +6,7 @@ import type { Comment } from "@/types/types"
 export function useRoomComments(songId: string | undefined) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
+  const [listeners, setListeners] = useState(0)
 
   useEffect(() => {
     if (!songId) return
@@ -21,6 +22,7 @@ export function useRoomComments(songId: string | undefined) {
 
       const data = snapshot.data()
       console.log(data)
+      setListeners(data?.listeners)
       const commentIds: string[] = data?.comments || []
 
       if (commentIds.length === 0) {
@@ -47,5 +49,5 @@ export function useRoomComments(songId: string | undefined) {
     return () => unsubscribe()
   }, [songId])
 
-  return { comments, loading }
+  return { comments, listeners, loading }
 }

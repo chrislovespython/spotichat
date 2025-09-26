@@ -77,9 +77,9 @@ class SongConnectionManager:
 
 song_manager = SongConnectionManager()
 
-# WebSocket helper functions
-async def get_song_by_id_ws(token: str, song_id: str):
-    """Get song details by Spotify track ID for WebSocket"""
+# Helper function to get song by ID (shared between REST and WebSocket)
+def get_song_by_id_helper(token: str, song_id: str):
+    """Get song details by Spotify track ID"""
     try:
         response = requests.get(
             f"https://api.spotify.com/v1/tracks/{song_id}",
@@ -93,18 +93,38 @@ async def get_song_by_id_ws(token: str, song_id: str):
                 "id": track_data["id"],
                 "name": track_data["name"],
                 "artist": track_data["artists"][0].get("name"),
+                "artists": [artist.get("name") for artist in track_data["artists"]],
+                "album": {
+                    "name": track_data["album"]["name"],
+                    "images": track_data["album"]["images"]
+                },
                 "images": track_data["album"]["images"],
                 "duration_ms": track_data["duration_ms"],
                 "explicit": track_data["explicit"],
                 "external_urls": track_data["external_urls"],
                 "preview_url": track_data.get("preview_url"),
                 "popularity": track_data["popularity"],
-                "is_playing": track_data.get("is_playing", False),
+                "is_local": track_data.get("is_local", False),
+                "track_number": track_data.get("track_number"),
+                "disc_number": track_data.get("disc_number")
             }
-        return None
+        elif response.status_code == 400:
+            return {"error": "Invalid track ID"}
+        elif response.status_code == 404:
+            return {"error": "Track not found"}
+        else:
+            return {"error": f"Spotify API error: {response.status_code}"}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error fetching song {song_id}: {e}")
+        return {"error": "Network error"}
     except Exception as e:
         logger.error(f"Error fetching song {song_id}: {e}")
-        return None
+        return {"error": "Internal server error"}
+
+# WebSocket helper functions
+async def get_song_by_id_ws(token: str, song_id: str):
+    """Get song details by Spotify track ID for WebSocket"""
+    return get_song_by_id_helper(token, song_id)
 
 async def get_current_song_ws(token: str):
     """Get current playing song for WebSocket"""
@@ -175,7 +195,7 @@ async def websocket_songs_endpoint(websocket: WebSocket, user_id: str):
                         "action": "song_by_id_response",
                         "data": song,
                         "song_id": song_id,
-                        "success": song is not None
+                        "success": song is not None and "error" not in song
                     }
                 else:
                     response = {
@@ -192,7 +212,7 @@ async def websocket_songs_endpoint(websocket: WebSocket, user_id: str):
                     songs = []
                     for song_id in song_ids:
                         song = await get_song_by_id_ws(token, song_id)
-                        if song:
+                        if song and "error" not in song:
                             songs.append(song)
                     
                     response = {
@@ -269,8 +289,9 @@ async def poll_current_song(user_id: str, token: str, interval: int):
     except Exception as e:
         logger.error(f"Error in polling task for user {user_id}: {e}")
 
-# Rest of your existing endpoints remain the same...
-# Backend
+# -----------------------------
+# REST API Endpoints
+# -----------------------------
 from fastapi import Header, HTTPException
 
 @app.get("/me")
@@ -291,6 +312,72 @@ def current(authorization: str = Header(...)):
         return {"message": "Not listening"}
     print(song)
     return song
+
+# NEW: Get song by ID REST endpoint
+@app.get("/song/{song_id}")
+def get_song_by_id(song_id: str, authorization: str = Header(...)):
+    """Get song details by Spotify track ID"""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid auth header")
+    
+    token = authorization.split(" ")[1]
+    
+    # Validate song_id format (basic validation)
+    if not song_id or len(song_id) != 22:
+        raise HTTPException(status_code=400, detail="Invalid Spotify track ID format")
+    
+    song = get_song_by_id_helper(token, song_id)
+    
+    if "error" in song:
+        if song["error"] == "Track not found":
+            raise HTTPException(status_code=404, detail="Track not found")
+        elif song["error"] == "Invalid track ID":
+            raise HTTPException(status_code=400, detail="Invalid track ID")
+        elif song["error"] == "Network error":
+            raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+        else:
+            raise HTTPException(status_code=500, detail=song["error"])
+    
+    return song
+
+# NEW: Get multiple songs by IDs
+class MultipleSongsRequest(BaseModel):
+    song_ids: List[str]
+
+@app.post("/songs/multiple")
+def get_multiple_songs(body: MultipleSongsRequest, authorization: str = Header(...)):
+    """Get multiple songs by their Spotify track IDs (max 50)"""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid auth header")
+    
+    token = authorization.split(" ")[1]
+    
+    if not body.song_ids:
+        raise HTTPException(status_code=400, detail="song_ids list cannot be empty")
+    
+    if len(body.song_ids) > 50:
+        raise HTTPException(status_code=400, detail="Maximum 50 song IDs allowed")
+    
+    # Validate all song IDs
+    for song_id in body.song_ids:
+        if not song_id or len(song_id) != 22:
+            raise HTTPException(status_code=400, detail=f"Invalid Spotify track ID format: {song_id}")
+    
+    songs = []
+    errors = []
+    
+    for song_id in body.song_ids:
+        song = get_song_by_id_helper(token, song_id)
+        if "error" in song:
+            errors.append({"song_id": song_id, "error": song["error"]})
+        else:
+            songs.append(song)
+    
+    return {
+        "tracks": songs,
+        "total": len(songs),
+        "errors": errors if errors else None
+    }
 
 # -----------------------------
 # Seek Functionality
@@ -322,7 +409,6 @@ def seek_track(body: SeekRequest, authorization: str = Header(...)):
             raise HTTPException(status_code=current_response.status_code, detail="Failed to get current playback")
         
         playback_data = current_response.json()
-        #print(playback_data)
         
         track = playback_data.get("item")
         
@@ -330,7 +416,6 @@ def seek_track(body: SeekRequest, authorization: str = Header(...)):
             raise HTTPException(status_code=400, detail="Playback is paused")
         
         # Validate timestamp is within track duration
-        
         if body.timestamp_ms < 0:
             raise HTTPException(status_code=400, detail="Timestamp cannot be negative")
         
