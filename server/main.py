@@ -527,3 +527,6 @@ def callback(body: CodeBody):
 # -----------------------------
 # Comments (like YouTube)
 # -----------------------------
+if __name__ == '__main__':
+    import uvicorn
+    uvicorn.run(app)
