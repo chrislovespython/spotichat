@@ -8,6 +8,7 @@ import Listening from "./pages/Listening";
 import Song from "./pages/Song";
 import Callback from "./pages/Callback";
 import './index.css';
+import { Analytics } from "@vercel/analytics/next"
 
 const router = createBrowserRouter([
   {
@@ -40,6 +41,7 @@ const router = createBrowserRouter([
 const root = document.getElementById("root");
 ReactDOM.createRoot(root!).render(
   <React.StrictMode>
+    <Analytics/>
     <RouterProvider router={router} />
   </React.StrictMode>
 );
