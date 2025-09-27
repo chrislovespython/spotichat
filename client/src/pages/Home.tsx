@@ -1,7 +1,7 @@
 
 export default function Home() {
   const login = async () => {
-    const res = await fetch("http://localhost:8000/auth/login")
+    const res = await fetch("https://spotichat-backend-new.vercel.app/auth/login")
     const data = await res.json()
     window.location.href = data.url
   }
