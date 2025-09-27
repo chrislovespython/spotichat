@@ -1,13 +1,45 @@
-import React from "react"
-import ReactDOM from "react-dom/client"
-import { BrowserRouter } from "react-router"
-import App from "./App"
-import "./index.css"
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { createBrowserRouter } from "react-router";
+import { RouterProvider } from "react-router/dom";
+import ErrorPage from "./pages/ErrorPage";
+import Home from "./pages/Home";
+import Listening from "./pages/Listening";
+import Song from "./pages/Song";
+import Callback from "./pages/Callback";
+import './index.css';
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Home />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/listening",
+    element: <Listening />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/song/:id",
+    element: <Song />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/callback",
+    element: <Callback />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    // Catch-all route for unmatched paths
+    path: "*",
+    element: <ErrorPage />,
+  },
+]);
+
+const root = document.getElementById("root");
+ReactDOM.createRoot(root!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <RouterProvider router={router} />
   </React.StrictMode>
-)
+);
