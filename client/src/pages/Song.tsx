@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from "react-router"
 import { useState, useEffect } from "react"
-import { useRoomComments } from "@/hooks/useComments"
-import { addComment, addListener, removeListener } from "@/lib/commentService"
-import { CommentCard } from "@/components/CommentCard"
+import { useRoomComments } from "../hooks/useComments"
+import { addComment, addListener, removeListener } from "../lib/commentService"
+import { CommentCard } from "../components/CommentCard"
 import { ArrowLeft, Music } from "lucide-react"
 
 // Types
@@ -39,8 +39,7 @@ export default function Song() {
   const navigate = useNavigate()
   const { comments, listeners, loading: commentsLoading } = useRoomComments(songId)
   const [newComment, setNewComment] = useState("")
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [extractedTimestamps, setExtractedTimestamps] = useState<Array<{ timestamp: string; milliseconds: number }>>([])
+  const [, setExtractedTimestamps] = useState<Array<{ timestamp: string; milliseconds: number }>>([])
 
   // New state for song data
   const [songData, setSongData] = useState<SongData | null>(null)

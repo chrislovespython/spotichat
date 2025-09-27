@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { doc, getDoc, onSnapshot, deleteDoc } from "firebase/firestore"
-import { db } from "@/lib/firebase"
-import type { Comment } from "@/types/types"
+import { db } from "../lib/firebase"
+import type { Comment } from "../types/types"
 
 export function useRoomComments(songId: string | undefined) {
   const [comments, setComments] = useState<Comment[]>([])

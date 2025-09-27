@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
-import type { Comment } from "@/types/types"
-import { toggleLike, removeComment } from "@/lib/commentService"
+import type { Comment } from "../types/types"
+import { toggleLike, removeComment } from "../lib/commentService"
 
 type SpotifyProfile = {
   id: string
