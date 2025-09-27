@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button"
 
 export default function Home() {
   const login = async () => {
@@ -13,15 +12,19 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen text-center gap-4">
-      <h1 className="text-4xl font-bold">🎶 Spotify Connect</h1>
-      <p className="text-neutral-400">See who’s listening to the same song and comment about it!</p>
+    <main className="flex flex-col items-center justify-center h-screen w-screen">
+      <h1 className="text-5xl font-bold md:text-6xl">Liscuss.</h1>
+      <h5 className="text-base-content/70 my-4 text-center w-96 font-semibold italic md:text-2xl md:w-[32rem] max-sm:w-80">Drop your thoughts on any song in real-time as it plays. Keep it simple: lis(ten) and dis(cuss).</h5>
 
       {localStorage.getItem("spotify_token") ? (
-        <Button variant="destructive" onClick={logout}>Logout</Button>
+        <button className="btn btn-error md:text-2xl" onClick={logout}>Logout</button>
       ) : (
-        <Button onClick={login}>Login with Spotify</Button>
+        <button className="btn btn-neutral md:text-lg" onClick={login}>Login with Spotify</button>
       )}
-    </div>
+      <footer className="mt-4">
+        <h1 className="italic text-lg font-semibold text-base-content/70">Made by <a className="link link-hover" href="http://x.com/@chrisawesomer_" target="_blank">chris (chrisawesomer)</a></h1>
+      </footer>
+      
+    </main>
   )
 }

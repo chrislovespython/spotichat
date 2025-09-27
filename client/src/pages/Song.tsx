@@ -1,11 +1,9 @@
 import { useParams, useNavigate } from "react-router"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { useState, useEffect } from "react"
 import { useRoomComments } from "@/hooks/useComments"
 import { addComment, addListener, removeListener } from "@/lib/commentService"
 import { CommentCard } from "@/components/CommentCard"
-import { ArrowLeft, Music, ExternalLink, Clock } from "lucide-react"
+import { ArrowLeft, Music } from "lucide-react"
 
 // Types
 interface SpotifyImage {
@@ -41,6 +39,7 @@ export default function Song() {
   const navigate = useNavigate()
   const { comments, listeners, loading: commentsLoading } = useRoomComments(songId)
   const [newComment, setNewComment] = useState("")
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [extractedTimestamps, setExtractedTimestamps] = useState<Array<{ timestamp: string; milliseconds: number }>>([])
 
   // New state for song data
@@ -99,11 +98,6 @@ export default function Song() {
   }
 
   // Format duration from milliseconds to mm:ss
-  const formatDuration = (durationMs: number): string => {
-    const minutes = Math.floor(durationMs / 60000)
-    const seconds = Math.floor((durationMs % 60000) / 1000)
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
 
   // Add listeners when component mounts and remove when unmounts
   useEffect(() => {
@@ -174,94 +168,47 @@ export default function Song() {
     navigate(-1) // Go back to previous page
   }
 
-  const handleSeekToTimestamp = async (milliseconds: number) => {
-    const token = localStorage.getItem("spotify_token")
-    if (!token) {
-      console.error("No authentication token")
-      return
-    }
-
-    try {
-      const response = await fetch('http://localhost:8000/seek', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          timestamp_ms: milliseconds
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to seek')
-      }
-
-      const result = await response.json()
-      console.log('Seek successful:', result.message)
-    } catch (error) {
-      console.error('Error seeking:', error)
-      // You could show a toast notification here
-    }
-  }
-
   if (!songId) {
     return <div className="max-w-2xl mx-auto py-10">Song ID not found</div>
   }
 
+  
+
   return (
-    <div className="max-w-2xl mx-auto py-10">
+    <main className="h-screen w-screen p-3 overflow-hidden flex flex-col md:items-center">
       {/* Back Button */}
-      <div className="mb-6">
-        <Button 
-          variant="ghost" 
+      <div className="mb-6 w-full">
+        <button 
           onClick={handleBack}
-          className="flex items-center gap-2 hover:bg-neutral-100"
+          className="btn btn-ghost flex items-center w-16"
         >
-          <ArrowLeft size={16} />
-          Back
-        </Button>
+          <ArrowLeft size={24} />
+        </button>
       </div>
 
       {/* Song Information Section */}
       {songLoading ? (
-        <div className="mb-8 p-6 bg-neutral-50 rounded-lg">
-          <div className="animate-pulse flex space-x-4">
-            <div className="rounded-md bg-neutral-300 h-24 w-24"></div>
-            <div className="flex-1 space-y-2 py-1">
-              <div className="h-4 bg-neutral-300 rounded w-3/4"></div>
-              <div className="h-4 bg-neutral-300 rounded w-1/2"></div>
-              <div className="h-4 bg-neutral-300 rounded w-1/4"></div>
-            </div>
-          </div>
+        <div className="mb-8 p-6 flex items-center justify-center md:w-96">
+          <span className="loading loading-spinner loading-xl"></span>
         </div>
       ) : songError ? (
-        <div className="mb-8 p-6 bg-red-50 border border-red-200 rounded-lg">
+        <div className="mb-8 p-6 bg-red-50 border border-red-200 rounded-lg md:w-96">
           <div className="flex items-center gap-2 text-red-700">
             <Music size={20} />
             <span className="font-medium">Error loading song</span>
           </div>
           <p className="text-red-600 mt-1">{songError}</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-3"
-            onClick={() => songId && fetchSongData(songId)}
-          >
-            Try Again
-          </Button>
         </div>
       ) : songData ? (
-        <div className="mb-8 p-6 bg-gradient-to-r from-neutral-50 to-neutral-100 rounded-lg border">
-          <div className="flex gap-4">
+        <div className="mb-8 p-6 card bg-base-200/70 mx-4 rounded-xl border border-base-300/50 h-36 md:w-[30rem]">
+          <div className="flex gap-2">
             {/* Album Art */}
             <div className="flex-shrink-0">
               {songData.images.length > 0 ? (
                 <img 
                   src={songData.images[0].url} 
                   alt={`${songData.name} cover`}
-                  className="w-24 h-24 rounded-md shadow-md"
+                  className="w-24 h-24 rounded-md shadow-md mr-2"
                 />
               ) : (
                 <div className="w-24 h-24 bg-neutral-200 rounded-md flex items-center justify-center">
@@ -271,76 +218,58 @@ export default function Song() {
             </div>
 
             {/* Song Details */}
-            <div className="flex flex-col justify-between">
-              <div>
+            <div className="flex flex-col justify-between mt-1">
+              <div className="gap-1 flex flex-col">
                 <h2 className="text-xl font-semibold">{songData.name}</h2>
-                <p className="text-neutral-600">
+                <p className="text-neutral-600 italic">
                   {songData.artists.join(", ")}
                 </p>
                 <p className="text-sm text-neutral-500">{songData.album.name}</p>
               </div>
-              <div className="flex items-center gap-4 mt-2">
-                <div className="flex items-center gap-1 text-neutral-500 text-sm">
-                  <Clock size={14} />
-                  {formatDuration(songData.duration_ms)}
-                </div>
-                <a
-                  href={songData.external_urls.spotify}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-green-600 hover:underline text-sm"
-                >
-                  <ExternalLink size={14} />
-                  Open in Spotify
-                </a>
-              </div>
+
             </div>
           </div>
         </div>
       ) : null}
 
       {/* Listeners Count */}
-      <div className="mb-6 text-sm text-neutral-600">
-        {listeners > 0 ? `${listeners} people listening now` : "No active listeners"}
+      <div className="mb-6 text-sm text-neutral-600 italic flex items-center gap-2 justify-center">
+        <div className="inline-grid *:[grid-area:1/1]">
+          <div className="status status-info animate-ping"></div>
+            <div className="status status-info"></div>
+        </div>
+        {listeners - 1> 0 ? `${listeners - 1} people are listening the same song as you.` : "Nobody is listening the same song as you (for the moment)."}
       </div>
 
       {/* Comment Box */}
-      <div className="mb-6">
-        <Textarea
+      <div className="mb-6 flex flex-col md:items-center">
+        <input
           value={newComment}
           onChange={(e) => handleCommentChange(e.target.value)}
-          placeholder="Add a comment... (e.g., 'This part at 1:23 is crazy!')"
-          className="w-full"
+          placeholder={`Say something fun or memorable about ${songData ? songData?.name : ""}...`}
+          className="w-full input flex flex-col md:w-[32rem]"
         />
-        {extractedTimestamps.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {extractedTimestamps.map((ts, idx) => (
-              <Button
-                key={idx}
-                size="sm"
-                variant="outline"
-                onClick={() => handleSeekToTimestamp(ts.milliseconds)}
-              >
-                {ts.timestamp}
-              </Button>
-            ))}
-          </div>
-        )}
-        <Button
+        <button
           onClick={handlePost}
-          className="mt-3"
+          className="mt-3 btn btn-primary md:w-96"
           disabled={!newComment.trim()}
         >
           Post Comment
-        </Button>
+        </button>
       </div>
 
-      {/* Comments Section */}
-      <div className="space-y-4">
+      {/* Comments Section with Hidden Scrollbars */}
+      <div 
+        className={
+          comments.length === 0 
+            ? "space-y-4 h-64 flex flex-col items-center justify-center" 
+            : " flex flex-col items-center scrollbar-thin overflow-y-auto scrollbar-thumb-transparent h-80 scrollbar-track-transparent gap-3"
+        }
+      >
         {commentsLoading ? (
-          <p className="text-neutral-500">Loading comments...</p>
+          <h1 className="text-base-content/30 font-semibold text-2xl">Loading Comments...</h1>
         ) : comments.length === 0 ? (
-          <p className="text-neutral-500">No comments yet. Be the first!</p>
+          <h1 className="text-base-content/30 font-semibold text-2xl">No comments yet. Be the first!</h1>
         ) : (
           comments.map((comment) => (
             <CommentCard
@@ -352,6 +281,6 @@ export default function Song() {
           ))
         )}
       </div>
-    </div>
+    </main>
   )
 }

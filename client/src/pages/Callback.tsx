@@ -37,8 +37,8 @@ export default function Callback() {
 
 
   return (
-    <div className="flex items-center justify-center h-screen">
-      <p>Authenticating with Spotify…</p>
-    </div>
+    <main className="flex items-center justify-center h-screen">
+      <h1 className="text-lg font-semibold">Authenticating with Spotify…</h1>
+    </main>
   )
 }

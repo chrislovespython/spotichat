@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import type {SongItem, SpotifyUser } from "../types/types"
+import { HeadphoneOff } from "lucide-react"
 
 // Types for WebSocket
 interface WebSocketMessage {
@@ -177,21 +175,30 @@ export default function Listening() {
   const songItem = song as SongItem;
 
   async function refreshToken(ref: string): Promise<string | undefined> {
-    try {
-      const res = await fetch("http://localhost:8000/auth/refresh", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: ref }),
-      })
-      const data = await res.json()
-      localStorage.setItem("spotify_token", data.access_token)
+  try {
+    const res = await fetch("http://localhost:8000/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: ref }),
+    })
+    const data = await res.json()
+    console.log(data)
+    
+    // Calculate the expiration timestamp
+    const expiresAt = Date.now() + (data.expires_in * 1000)
+    
+    localStorage.setItem("spotify_token", data.access_token)
+    // Only update refresh_token if a new one is provided
+    if (data.refresh_token) {
       localStorage.setItem("refresh_token", data.refresh_token)
-      localStorage.setItem("token_expires", data.expires_at)
-      return data.access_token
-    } catch(err) {
-      console.log(err)
     }
+    localStorage.setItem("token_expires", expiresAt.toString())
+    
+    return data.access_token
+  } catch(err) {
+    console.log(err)
   }
+}
 
   // Handle token refresh for WebSocket
   const getValidToken = async (): Promise<string | null> => {
@@ -302,6 +309,7 @@ export default function Listening() {
         })
         const data = await res.json()
         setUser(data)
+        console.log(data)
       } catch (err) {
         console.error('Error fetching user:', err)
       }
@@ -317,25 +325,7 @@ export default function Listening() {
       wsClient.getCurrentSong()
     }
   }, [wsClient, connectionStatus])
-
-  if (!user) return <p className="text-center mt-20">Loading user...</p>
-  if (song === null) return (
-    <div className="text-center mt-20">
-      <p>Connecting to music stream...</p>
-      <p className="text-sm text-neutral-500 mt-2">
-        Status: {connectionStatus}
-      </p>
-    </div>
-  )
-  if (song && 'message' in song && song.message === "Not listening") return (
-    <div className="text-center mt-20">
-      <p>You're not listening to music.</p>
-      <p className="text-sm text-neutral-500 mt-2">
-        Connection: {connectionStatus === 'connected' ? '🟢 Connected' : '🔴 Disconnected'}
-      </p>
-    </div>
-  )
-
+  
   const logout = () => {
     if (wsClient) {
       wsClient.disconnect()
@@ -347,67 +337,75 @@ export default function Listening() {
     navigate("/")
   }
 
-  const handleRefreshSong = () => {
-    if (wsClient && connectionStatus === 'connected') {
-      wsClient.getCurrentSong()
-    }
-  }
+  if (!user) return (
+    <main className="h-screen flex flex-col items-center justify-center">
+      <span className="loading loading-spinner loading-xl"></span>
+    </main>
+  )
+  if (song === null) return (
+    <main className="h-screen flex flex-col items-center justify-center">
+      <span className="loading loading-spinner loading-xl"></span>
+      <h1 className="text-base-content font-semibold italic text-xl">Connecting To The Music Server...</h1>
+    </main>
+  )
+  if (song && 'message' in song && song.message === "Not listening") return (
+    <main className="h-screen flex flex-col items-center justify-center">
+      <HeadphoneOff size={64} className="text-base-300"/>
+      <h1 className="text-base-content text-xl font-medium text-center w-[28rem] my-4">You are not listening to music. Try opening Spotify and play a song.</h1>
+      <button className="btn btn-error" onClick={logout}>Logout</button>
+
+    </main>
+  )
+
+
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-6 p-4 bg-neutral-950 text-neutral-100">
+    <main className="flex flex-col items-center justify-center min-h-screen gap-6 p-4 text-neutral-100">
       
       {/* User info + logout */}
-      <div className="flex items-center gap-3 mb-4">
-        {user.avatar_url && <Avatar><AvatarImage src={user.avatar_url} /></Avatar>}
-        <span className="font-semibold">{user.display_name}</span>
-        <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-1 rounded ${
-            connectionStatus === 'connected' ? 'bg-green-600' : 
-            connectionStatus === 'connecting' ? 'bg-yellow-600' : 
-            'bg-red-600'
-          }`}>
-            {connectionStatus === 'connected' ? '🟢 Live' : 
-             connectionStatus === 'connecting' ? '🟡 Connecting' : 
-             '🔴 Offline'}
-          </span>
-          <Button variant="outline" size="sm" onClick={handleRefreshSong}>
-            Refresh
-          </Button>
-          <Button variant="destructive" size="sm" onClick={logout}>Logout</Button>
-        </div>
+      <div className="flex items-center gap-3 text-lg">
+        {user.images[0].url && (
+          <div className="avatar">
+            <div className="w-8 rounded-full">
+              <img src={user.images[0].url} />
+            </div>
+          </div>
+        )}
+        <span className="font-semibold text-base-content">{user.display_name}</span>
       </div>
 
       {/* Current song */}
-      <Card className="w-96 bg-neutral-900 border-neutral-700 shadow-md">
-        <CardContent className="flex flex-col items-center p-4 gap-3">
+      <div className="w-80 card bg-base-200/50 border border-base-200">
+        <div className="flex flex-col items-center p-4 gap-2">
           {songItem?.images?.[0]?.url && (
             <img
               src={songItem.images[0].url}
               alt={songItem.name}
-              className="w-48 h-48 object-cover rounded-lg shadow-lg"
+              className="w-48 h-48 object-cover rounded-lg border-2 border-base-300/50"
             />
           )}
-          <h2 className="text-xl font-bold text-center">{songItem?.name}</h2>
-          <p className="text-neutral-400 text-center">
+          <h2 className="text-xl font-bold text-center text-base-content">{songItem?.name}</h2>
+          <h4 className="text-base-content italic text-center">
             {songItem?.artist}
-          </p>
-          <p className="text-sm text-neutral-500">
-            {songItem?.is_playing ? "🎵 Playing now" : "⏸️ Paused"}
-          </p>
+          </h4>
+          <h5 className="text-sm text-info font-semibold">
+            {songItem?.is_playing ? "Playing now" : "Paused"}
+          </h5>
           
           {/* Progress bar (optional) */}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Buttons */}
       <div className="flex gap-4">
-        <Button 
+        <button className="btn btn-neutral"
           onClick={() => navigate(`/song/${songItem?.id}`)}
           disabled={!songItem?.id}
         >
           Go to Comments
-        </Button>
+        </button>
+      <button className="btn btn-error" onClick={logout}>Logout</button>
       </div>
-    </div>
+    </main>
   )
 }

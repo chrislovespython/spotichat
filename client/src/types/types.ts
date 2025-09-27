@@ -2,8 +2,7 @@
 export type SpotifyUser = {
   id: string
   display_name: string
-  profile_url?: string
-  avatar_url?: string
+  images : {height: number, url: string, width: string}[]
 } | null
 
 // Spotify Artist

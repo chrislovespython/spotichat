@@ -1,1 +1,5 @@
-@plugin "daisyui";
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark, business;
+}
+@plugin 'tailwind-scrollbar';
