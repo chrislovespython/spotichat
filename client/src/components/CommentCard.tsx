@@ -50,7 +50,7 @@ export function CommentCard({ comment, currentUserId, songId }: {
     let active = true
     setLoading(true)
     async function fetchProfile() {
-      const res = await fetch(`https://spotichat-backend.vercel.app/user/${comment?.authorId}`, {
+      const res = await fetch(`https://spotichat-backend.onrender.com/user/${comment?.authorId}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       if (!res.ok) return
@@ -83,7 +83,7 @@ const seekToTimestamp = async (timestampMs: number) => {
   try {
     const token = localStorage.getItem('spotify_token');
     
-    const response = await fetch('https://spotichat-backend.vercel.app/seek', {
+    const response = await fetch('https://spotichat-backend.onrender.com/seek', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

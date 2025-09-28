@@ -2,7 +2,7 @@ import { useEffect } from "react"
 
 export default function Home() {
   const login = async () => {
-    const res = await fetch("https://spotichat-backend.vercel.app/auth/login")
+    const res = await fetch("https://spotichat-backend.onrender.com/auth/login")
     const data = await res.json()
     window.location.href = data.url
   }

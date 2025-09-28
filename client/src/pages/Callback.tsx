@@ -10,7 +10,7 @@ export default function Callback() {
 
   if (!code) return
 
-  fetch("https://spotichat-backend.vercel.app/auth/callback", {
+  fetch("https://spotichat-backend.onrender.com/auth/callback", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code })
@@ -20,7 +20,7 @@ export default function Callback() {
       localStorage.setItem("spotify_token", data.access_token)
       localStorage.setItem("token_expires", data.expires_at)
       localStorage.setItem("refresh_token", data.refresh_token)
-      fetch("https://spotichat-backend.vercel.app/me", {
+      fetch("https://spotichat-backend.onrender.com/me", {
       headers: { Authorization: `Bearer ${data.access_token}` }
     })
       .then(res => res.json())
