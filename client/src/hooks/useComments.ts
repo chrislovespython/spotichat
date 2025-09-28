@@ -21,7 +21,7 @@ export function useRoomComments(songId: string | undefined) {
       }
 
       const data = snapshot.data()
-      console.log(data)
+
       setListeners(data?.listeners)
       const commentIds: string[] = data?.comments || []
 
@@ -37,7 +37,7 @@ export function useRoomComments(songId: string | undefined) {
           const cSnap = await getDoc(doc(db, "comments", cid))
           if (!cSnap.exists()) return null
           const data = cSnap.data() as Omit<Comment, "id">
-          console.log(data)
+
           return { id: cid, ...data }
         })
       )

@@ -26,7 +26,7 @@ class SongWebSocketClient {
   reconnectDelay: number;
   pollingActive: boolean;
 
-  constructor(userId: string, token: string, baseUrl = 'ws://spotichat-backend.vercel.app/') {
+  constructor(userId: string, token: string, baseUrl = 'wss://spotichat-backend.vercel.app/') {
     this.userId = userId;
     this.token = token;
     this.baseUrl = baseUrl;
@@ -45,7 +45,6 @@ class SongWebSocketClient {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('🎵 Connected to songs WebSocket');
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.reconnectDelay = 1000;
@@ -55,7 +54,6 @@ class SongWebSocketClient {
       this.ws.onmessage = (event: MessageEvent) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
-          console.log('📨 Received:', message);
           this.handleMessage(message);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
@@ -63,7 +61,6 @@ class SongWebSocketClient {
       };
 
       this.ws.onclose = (event: CloseEvent) => {
-        console.log('🔌 WebSocket connection closed:', event.code, event.reason);
         this.isConnected = false;
         this.pollingActive = false;
         this.onDisconnect();
@@ -96,7 +93,6 @@ class SongWebSocketClient {
   attemptReconnect(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`🔄 Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
       
       setTimeout(() => {
         this.connect();
@@ -182,7 +178,6 @@ export default function Listening() {
       body: JSON.stringify({ refresh_token: ref }),
     })
     const data = await res.json()
-    console.log(data)
     
     // Calculate the expiration timestamp
     const expiresAt = Date.now() + (data.expires_in * 1000)
@@ -195,8 +190,8 @@ export default function Listening() {
     localStorage.setItem("token_expires", expiresAt.toString())
     
     return data.access_token
-  } catch(err) {
-    console.log(err)
+  } catch {
+    // do something ig...
   }
 }
 
@@ -206,7 +201,6 @@ export default function Listening() {
     const refresh_token = localStorage.getItem("refresh_token") as string
 
     if (Date.now() >= expireTime) {
-      console.log("token expired, refreshing...")
       const newToken = await refreshToken(refresh_token)
       return newToken as string
     }
@@ -226,21 +220,18 @@ export default function Listening() {
 
       // Setup event handlers
       ws.onConnect = () => {
-        console.log('🎵 WebSocket connected!')
         setConnectionStatus('connected')
         // Start polling for current song every 3 seconds
         ws.startPolling(30)
       }
 
       ws.onDisconnect = () => {
-        console.log('🔌 WebSocket disconnected')
         setConnectionStatus('disconnected')
       }
 
 
       // Handle current song updates
       ws.on('current_song_update', (message: WebSocketMessage) => {
-        console.log('🎵 Song update received:', message.data)
         if (message.data) {
           // Transform WebSocket data to match your component's expected format
           const transformedSong: SongItem = {
@@ -260,7 +251,6 @@ export default function Listening() {
       })
 
       ws.on('current_song_response', (message: WebSocketMessage) => {
-        console.log('🎵 Current song response:', message.data)
         if (message.data) {
           const transformedSong: SongItem = {
             id: message.data.id,
@@ -277,8 +267,7 @@ export default function Listening() {
         }
       })
 
-      ws.on('polling_started', (message: WebSocketMessage) => {
-        console.log('📡 Polling started with interval:', message.interval)
+      ws.on('polling_started', () => {
       })
 
       setConnectionStatus('connecting')
@@ -309,7 +298,6 @@ export default function Listening() {
         })
         const data = await res.json()
         setUser(data)
-        console.log(data)
       } catch (err) {
         console.error('Error fetching user:', err)
       }

@@ -107,12 +107,10 @@ export default function Song() {
 
     // Add listener when component mounts
     addListener(songId)
-    console.log("listener added")
 
     // Cleanup: remove listener when component unmounts
     return () => {
       removeListener(songId)
-      console.log("listener removed")
     }
   }, [songId])
 
@@ -154,9 +152,6 @@ export default function Song() {
     // Use the first timestamp found, or 0 if none
     const primaryTimestamp = timestamps.length > 0 ? timestamps[0].milliseconds : 0
 
-    console.log('Posting comment:', originalComment)
-    console.log('Timestamps found:', timestamps)
-    console.log('Primary timestamp:', primaryTimestamp)
 
     await addComment(songId, user.id, originalComment, primaryTimestamp)
     setNewComment("")

@@ -22,7 +22,7 @@ export default function Home() {
         <button className="btn btn-neutral md:text-lg" onClick={login}>Login with Spotify</button>
       )}
       <footer className="mt-4">
-        <h1 className="italic text-lg font-semibold text-base-content/70">Made by <a className="link link-hover" href="http://x.com/@chrisawesomer_" target="_blank">chris (chrisawesomer)</a></h1>
+        <h1 className="italic text-lg font-semibold text-base-content/70 max-sm:text-sm">Made by <a className="link link-hover" href="http://x.com/@chrisawesomer_" target="_blank">chris (chrisawesomer)</a></h1>
       </footer>
       
     </main>

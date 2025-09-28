@@ -7,7 +7,7 @@ export default function Callback() {
 
   useEffect(() => {
   const code = params.get("code")
-  console.log(code)
+
   if (!code) return
 
   fetch("https://spotichat-backend.vercel.app/auth/callback", {
@@ -17,7 +17,6 @@ export default function Callback() {
   })
     .then(res => res.json())
     .then(data => {
-      console.log(data)
       localStorage.setItem("spotify_token", data.access_token)
       localStorage.setItem("token_expires", data.expires_at)
       localStorage.setItem("refresh_token", data.refresh_token)
@@ -27,7 +26,6 @@ export default function Callback() {
       .then(res => res.json())
       .then(data => {
         localStorage.setItem("spotify_user", JSON.stringify(data))
-        console.log(data)
       })
       .catch(err => console.error(err))
       navigate("/listening")

@@ -50,14 +50,12 @@ export function CommentCard({ comment, currentUserId, songId }: {
     let active = true
     setLoading(true)
     async function fetchProfile() {
-      console.log(comment?.authorId)
-        console.log(token)
       const res = await fetch(`https://spotichat-backend.vercel.app/user/${comment?.authorId}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       if (!res.ok) return
         const u = await res.json()
-        console.log(u)
+
         if (active) {
           setProfile({
             id: u.id,
@@ -99,7 +97,6 @@ const seekToTimestamp = async (timestampMs: number) => {
     const data = await response.json();
     
     if (response.ok) {
-      console.log(`Seeked to ${data.seeked_to_readable}`);
       setAlert({
         type: 'success',
         message: `Seeked to ${data.seeked_to_readable}`
