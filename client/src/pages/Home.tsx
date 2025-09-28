@@ -13,11 +13,9 @@ export default function Home() {
   }
 
   useEffect(() => {
-    return () => {
-      if (localStorage.getItem("spotify_token")) {
-        window.location.href = "/listening"
-      }
-    };
+    if (localStorage.getItem("spotify_token")) {
+      window.location.href = "/listening"
+    }
   }, [])
 
   return (
