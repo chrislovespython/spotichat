@@ -26,7 +26,7 @@ class SongWebSocketClient {
   reconnectDelay: number;
   pollingActive: boolean;
 
-  constructor(userId: string, token: string, baseUrl = 'ws://spotichat-backend-new.vercel.app/') {
+  constructor(userId: string, token: string, baseUrl = 'ws://spotichat-backend.vercel.app/') {
     this.userId = userId;
     this.token = token;
     this.baseUrl = baseUrl;
@@ -176,7 +176,7 @@ export default function Listening() {
 
   async function refreshToken(ref: string): Promise<string | undefined> {
   try {
-    const res = await fetch("https://spotichat-backend-new.vercel.app/auth/refresh", {
+    const res = await fetch("https://spotichat-backend.vercel.app/auth/refresh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: ref }),
@@ -304,7 +304,7 @@ export default function Listening() {
       if (!validToken) return
 
       try {
-        const res = await fetch("https://spotichat-backend-new.vercel.app/me", {
+        const res = await fetch("https://spotichat-backend.vercel.app/me", {
           headers: { Authorization: `Bearer ${validToken}` }
         })
         const data = await res.json()

@@ -8,7 +8,7 @@ load_dotenv()
 
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
-SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
+SPOTIFY_REDIRECT_URI = "https://liscuss.vercel.app/callback"
 
 scope = "user-read-currently-playing user-read-playback-state"
 

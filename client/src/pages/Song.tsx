@@ -67,7 +67,7 @@ export default function Song() {
       setSongLoading(true)
       setSongError(null)
 
-      const response = await fetch(`https://spotichat-backend-new.vercel.app/song/${id}`, {
+      const response = await fetch(`https://spotichat-backend.vercel.app/song/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
