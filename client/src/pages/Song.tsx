@@ -212,7 +212,7 @@ export default function Song() {
             </div>
 
             {/* Song Details */}
-            <div className="flex flex-col justify-between mt-1">
+            <div className="flex flex-col justify-between mt-1 max-sm:w-96">
               <div className="gap-1 flex flex-col">
                 <h2 className="text-xl font-semibold">{songData.name}</h2>
                 <p className="text-neutral-600 italic">
@@ -227,7 +227,7 @@ export default function Song() {
       ) : null}
 
       {/* Listeners Count */}
-      <div className="mb-6 text-sm text-neutral-600 italic flex items-center gap-2 justify-center max-s:w-96">
+      <div className="mb-6 text-sm text-neutral-600 italic flex items-center gap-2 justify-center max-sm:w-72 max-sm:text-center">
         <div className="inline-grid *:[grid-area:1/1]">
           <div className="status status-info animate-ping"></div>
             <div className="status status-info"></div>

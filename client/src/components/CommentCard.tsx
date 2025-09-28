@@ -237,7 +237,7 @@ const handleTimestampClick = (milliseconds: number) => {
             </button>
             {comment?.time != null && comment?.time > 0 && (
               <button className="btn btn-secondary" onClick={() => handleTimestampClick(comment?.time as number)}>
-                Go To {msToMMSS(comment.time)}
+                {msToMMSS(comment.time)}
               </button>
             )}
             {comment?.authorId === currentUserId && (
