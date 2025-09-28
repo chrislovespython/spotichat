@@ -227,7 +227,7 @@ export default function Song() {
       ) : null}
 
       {/* Listeners Count */}
-      <div className="mb-6 text-sm text-neutral-600 italic flex items-center gap-2 justify-center">
+      <div className="mb-6 text-sm text-neutral-600 italic flex items-center gap-2 justify-center max-s:w-96">
         <div className="inline-grid *:[grid-area:1/1]">
           <div className="status status-info animate-ping"></div>
             <div className="status status-info"></div>

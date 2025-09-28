@@ -191,7 +191,7 @@ const handleTimestampClick = (milliseconds: number) => {
   )
 
   return (
-    <div className="card bg-base-200/70 rounded-lg border border-base-300 w-[28rem]">
+    <div className="card bg-base-200/70 rounded-lg border border-base-300 w-[28rem] max-sm:w-80">
       {/* Alert display */}
       {alert && (
         <div className="p-4 pb-0">

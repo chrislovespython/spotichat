@@ -339,7 +339,7 @@ export default function Listening() {
   if (song && 'message' in song && song.message === "Not listening") return (
     <main className="h-screen flex flex-col items-center justify-center">
       <HeadphoneOff size={64} className="text-base-300"/>
-      <h1 className="text-base-content text-xl font-medium text-center w-[28rem] my-4">You are not listening to music. Try opening Spotify and play a song.</h1>
+      <h1 className="text-base-content text-xl font-medium text-center w-[28rem] my-4 max-sm:w-80">You are not listening to music. Try opening Spotify and play a song.</h1>
       <button className="btn btn-error" onClick={logout}>Logout</button>
 
     </main>
