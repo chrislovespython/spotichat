@@ -26,7 +26,7 @@ class SongWebSocketClient {
   reconnectDelay: number;
   pollingActive: boolean;
 
-  constructor(userId: string, token: string, baseUrl = 'wss://spotichat-backend.vercel.app/') {
+  constructor(userId: string, token: string, baseUrl = 'wss://spotichat-backend.vercel.app') {
     this.userId = userId;
     this.token = token;
     this.baseUrl = baseUrl;
